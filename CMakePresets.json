@@ -1,0 +1,33 @@
+﻿{
+  "version": 3,
+  "configurePresets": [
+    {
+        "name": "windows-base",
+        "hidden": true,
+        "generator": "Ninja",
+        "binaryDir": "${sourceDir}/../../build/multi_physics_solver",
+        "installDir": "${sourceDir}/../../install/multi_physics_solver",
+        "cacheVariables": {
+            "CMAKE_C_COMPILER": "cl.exe",
+            "CMAKE_CXX_COMPILER": "cl.exe"
+        },
+        "condition": {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Windows"
+        }
+    },
+    {
+      "hidden": true,
+      "name": "vcpkg",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      }
+    },
+    {
+      "hidden": true,
+      "name": "vulkan"
+    }
+  ]
+}
