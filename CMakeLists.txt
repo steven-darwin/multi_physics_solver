@@ -17,6 +17,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # add source to this project's executable.
 set(PROJECT_SOURCES
     multi_physics_solver.cpp
+    ../../src/input-output/InputOutputAdapter.cpp
+    ../../src/input-output/InputAdapter.cpp
+    ../../src/input-output/InputXDMFAdapter.cpp
+    ../../src/input-output/InputHDF5Adapter.cpp
+    ../../src/input-output/OutputAdapter.cpp
+    ../../src/input-output/OutputXDMFAdapter.cpp
+    ../../src/input-output/OutputHDF5Adapter.cpp
+    ../../src/geometry-topology/GeometryTopology.cpp
+    ../../src/geometry-topology/GeometryTopologyComposite.cpp
+    ../../src/geometry-topology/GeometryTopologyCell.cpp
+    ../../src/geometry-topology/GeometryTopologyShell.cpp
+    ../../src/geometry-topology/GeometryTopologyFace.cpp
+    ../../src/geometry-topology/GeometryTopologyWire.cpp
+    ../../src/geometry-topology/GeometryTopologyEdge.cpp
+    ../../src/geometry-topology/GeometryTopologyVertex.cpp
+    src/core/SolverCore.cpp
 )
 
 add_executable (${PROJECT_NAME} ${PROJECT_SOURCES}) 
