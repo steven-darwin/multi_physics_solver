@@ -33,6 +33,7 @@ set(PROJECT_SOURCES
     ../../src/geometry-topology/GeometryTopologyEdge.cpp
     ../../src/geometry-topology/GeometryTopologyVertex.cpp
     src/core/SolverCore.cpp
+    src/solver/FiniteDifference.cpp
 )
 
 add_executable (${PROJECT_NAME} ${PROJECT_SOURCES}) 
@@ -61,11 +62,13 @@ target_link_libraries(${PROJECT_NAME}
 
 target_link_directories(${PROJECT_NAME}
     PRIVATE
+        lib/CoolProp-7.2.0/lib
          ../../shared_lib/xdmf-3.0.0/lib/
 )
 
 target_include_directories(${PROJECT_NAME} 
     PRIVATE 
+        lib/CoolProp-7.2.0/include
 	    ../../shared_lib/xdmf-3.0.0/include/
 	    ../../shared_lib/xdmf-3.0.0/include/core/
 	    ../../shared_lib/xdmf-3.0.0/include/core/loki/
@@ -75,6 +78,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
+        CoolPropd
         Xdmf
         XdmfCore
 )
@@ -85,3 +89,6 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE
         nlohmann_json::nlohmann_json
 )
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE FMT_UNICODE=0)
+

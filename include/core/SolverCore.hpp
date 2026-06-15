@@ -30,6 +30,9 @@ private:
     /** Attribute to store input adapter metadata */
     scmp::AdapterInfo _inputAdapterInfo;
 
+    /** Attribute to store modified neutral geometry topology data */
+    std::shared_ptr<GeometryTopology> _modifiedNeutralGeometryTopology;
+
     /** Attribute to store output adapter metadata */
     scmp::AdapterInfo _outputAdapterInfo;
 };
