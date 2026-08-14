@@ -1,20 +1,25 @@
-#include "core/SolverCore.hpp"
+#include "core/SlvrCore.hpp"
+#include "initial-boundary/SlvrZoning.hpp"
 
 #include <stdlib.h>
 #include <iostream>
 #include <memory>
 
-//#include "CoolProp.h"
-//#include "AbstractState.h"
+#include "CoolProp.h"
+#include "AbstractState.h"
 
-int main() {
-    SolverCore core;
-    core.setup();
+int main(int argc, char* argv[]) {
+    SlvrZoning init_bdry_program(argv[1]);
+    init_bdry_program.setupPhase();
+
+    SlvrCore solver_program(argv[1]);
+    solver_program.setup();
+
     return 0;
 
     //std::cout << "Entry" << std::endl;
 
-    //std::shared_ptr<CoolProp::AbstractState> Water(CoolProp::AbstractState::factory("HEOS", "Water"));
+    //std::shared_ptr<CoolProp::AbstractState> Water(CoolProp::AbstractState::factory("REFPROP", "Water"));
 
     //std::cout << "Construction is done" << std::endl;
 

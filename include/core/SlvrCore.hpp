@@ -1,5 +1,5 @@
 /**
- * @file SolverCore.hpp
+ * @file SlvrCore.hpp
  * @author Steven Darwin
  * @version 0.0.1
  * @date Created : 2026-04-18
@@ -8,25 +8,41 @@
  * @brief [Header] ...
  */
 
-#ifndef SOLVER_CORE_HPP
-#define SOLVER_CORE_HPP
+#ifndef SLVR_CORE_HPP
+#define SLVR_CORE_HPP
 
 #include "general/Generic.hpp"
 
 #include "geometry-topology/GeometryTopology.hpp"
 
-class SolverCore {
+class SlvrCore {
 public:
+    struct UUIDHash {
+        std::size_t operator()(const std::array<uint8_t, 16>& uuid) const noexcept {
+            std::size_t hash = 0;
+            for (auto byte : uuid) {
+                hash ^= static_cast<std::size_t>(byte)
+                    + static_cast<std::size_t>(0x9e3779b9)
+                    + (hash << 6)
+                    + (hash >> 2);
+            }
+            return hash;
+        }
+    };
+
     /** Constructor of SolverCore object
      */
-    SolverCore();
+    SlvrCore();
+    SlvrCore(const char* runtime_config_file_path);
 
     /** Destructor of SolverCore object */
-    ~SolverCore();
+    ~SlvrCore();
 
     void setup();
 
 private:
+    const char* _runtimeConfigFilePath;
+
     /** Attribute to store input adapter metadata */
     scmp::AdapterInfo _inputAdapterInfo;
 

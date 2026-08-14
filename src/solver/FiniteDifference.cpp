@@ -18,18 +18,30 @@
 #include "input-output/OutputXDMFAdapter.hpp"
 #include "geometry-topology/GeometryTopology.hpp"
 #include "geometry-topology/GeometryTopologyVertex.hpp"
+#include "utility/ConfigReader.hpp"
 
 #include "solver/FiniteDifference.hpp"
 
-FiniteDifference::FiniteDifference(std::shared_ptr<GeometryTopology> neutral_geometry_topology) {
+FiniteDifference::FiniteDifference(std::shared_ptr<GeometryTopology> neutral_geometry_topology, const char* runtime_config_file_path) {
     _neutralGeometryTopology = neutral_geometry_topology;
+    _runtimeConfigFilePath = runtime_config_file_path;
 }
 
 FiniteDifference::~FiniteDifference() {
     // TBA
 }
 
-std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(unsigned int step_count, double relaxation_factor, unsigned int iter_count, double error_tolerance) {
+std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(
+    unsigned int step_count, 
+    double relaxation_factor, 
+    unsigned int iter_count, 
+    double error_tolerance, 
+    std::vector<OutputXDMFAdapter::ParameterMetadata> output_parameter_metadata_list, 
+    std::vector<std::shared_ptr<GeometryTopology>> zone_neutral_geometry_topology_list, 
+    std::unordered_set < std::array<uint8_t, 16>, SlvrCore::UUIDHash>& boundary_vertex_list) {
+
+    ConfigReader config_reader;
+
     std::unordered_map<std::shared_ptr<GeometryTopology>, unsigned int> vertex_list;
     _neutralGeometryTopology->getDescendants(vertex_list, GeometryTopology::Type::VERTEX);
 
@@ -59,16 +71,21 @@ std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(unsigned int 
         );
 
     for (unsigned int i = 0; i < iter_count; i++) {
-        std::shared_ptr<OutputXDMFAdapter> solverOutputAdapter = std::make_shared<OutputXDMFAdapter>("slab_solver_iter" + std::to_string(i), "slab_solver_iter" + std::to_string(i));
+        std::string output_file_suffix;
+        
+        output_file_suffix = "original.iter";
+        output_file_suffix += std::to_string(i + 1);
+        output_file_suffix += ".slvr";
+
+        std::shared_ptr<OutputXDMFAdapter> solverOutputAdapter;
+        solverOutputAdapter = std::make_shared<OutputXDMFAdapter>(_runtimeConfigFilePath, output_file_suffix);
 
         double actual_error = 0;
 
         for (unsigned int j = 0; j < ordered_vertex.size(); j++) {
             std::vector<double> computational_grid_coordinate = ordered_vertex[j]->getAttributeValue("computational_grid");
-            bool is_outer_vertex = (computational_grid_coordinate[0] == 0) || (computational_grid_coordinate[1] == 0) || (computational_grid_coordinate[2] == 0) 
-                || (computational_grid_coordinate[0] == 1) || (computational_grid_coordinate[1] == 1) || (computational_grid_coordinate[2] == 1);
 
-            if (!is_outer_vertex) {
+            if (!boundary_vertex_list.contains(ordered_vertex[j]->getID())) {
                 double temp_value = multiplier;
                 temp_value *= (
                     ((ordered_vertex[j + std::pow(step_count + 1, 0)]->getAttributeValue("temperature")[0] + ordered_vertex[j - std::pow(step_count + 1, 0)]->getAttributeValue("temperature")[0]) / std::pow(step_size[0], 2)) +
@@ -78,7 +95,7 @@ std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(unsigned int 
 
                 actual_error += std::abs(ordered_vertex[j]->getAttributeValue("temperature")[0] - temp_value);
 
-                ordered_vertex[j]->upsertAttribute("temperature", { ordered_vertex[j]->getAttributeValue("temperature")[0] + (relaxation_factor * (temp_value - ordered_vertex[j]->getAttributeValue("temperature")[0])) });
+                ordered_vertex[j]->upsertAttribute("temperature", { 1 }, { ordered_vertex[j]->getAttributeValue("temperature")[0] + (relaxation_factor * (temp_value - ordered_vertex[j]->getAttributeValue("temperature")[0])) });
 
                 std::cout << i << " " << j << " " << ordered_vertex[j]->getAttributeValue("temperature")[0] << " " << actual_error << std::endl;
             }
@@ -88,7 +105,28 @@ std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(unsigned int 
             break;
         }
         else {
+            std::dynamic_pointer_cast<OutputXDMFAdapter>(solverOutputAdapter)->addSolverParameter(output_parameter_metadata_list);
             std::dynamic_pointer_cast<OutputXDMFAdapter>(solverOutputAdapter)->serialize(_neutralGeometryTopology);
+
+            std::string existing_hdf5_file_path =
+                config_reader.getRuntimeConfigValue(_runtimeConfigFilePath, "scmp", "staging_directory_path") +
+                "/" +
+                config_reader.getRuntimeConfigValue(_runtimeConfigFilePath, "scmp", "file_name_prefix") +
+                "." +
+                "original.iter" +
+                std::to_string(i + 1) + 
+                ".slvr.h5";
+
+            char* hdf5_buffer = new char[existing_hdf5_file_path.length() + 1];
+            std::memcpy(hdf5_buffer, existing_hdf5_file_path.c_str(), existing_hdf5_file_path.length());
+            hdf5_buffer[existing_hdf5_file_path.length()] = '\0';
+
+            output_file_suffix = "extended.iter";
+            output_file_suffix += std::to_string(i + 1);
+            output_file_suffix += ".slvr";
+
+            solverOutputAdapter = std::make_shared<OutputXDMFAdapter>(_runtimeConfigFilePath, output_file_suffix);
+            std::dynamic_pointer_cast<OutputXDMFAdapter>(solverOutputAdapter)->appendZoneCreationData(zone_neutral_geometry_topology_list, hdf5_buffer);
         }
     }
 

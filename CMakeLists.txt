@@ -32,7 +32,9 @@ set(PROJECT_SOURCES
     ../../src/geometry-topology/GeometryTopologyWire.cpp
     ../../src/geometry-topology/GeometryTopologyEdge.cpp
     ../../src/geometry-topology/GeometryTopologyVertex.cpp
-    src/core/SolverCore.cpp
+    ../../src/utility/ConfigReader.cpp
+    src/core/SlvrCore.cpp
+    src/initial-boundary/SlvrZoning.cpp
     src/solver/FiniteDifference.cpp
 )
 
