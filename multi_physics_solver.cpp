@@ -1,5 +1,7 @@
 #include "core/SlvrCore.hpp"
 #include "initial-boundary/SlvrZoning.hpp"
+#include "utility/ConfigReader.hpp"
+#include "report/SlvrReport.hpp"
 
 #include <stdlib.h>
 #include <iostream>
@@ -9,11 +11,20 @@
 #include "AbstractState.h"
 
 int main(int argc, char* argv[]) {
-    SlvrZoning init_bdry_program(argv[1]);
+    ConfigReader::instance().setRuntimeConfigFilePath(argv[1]);
+
+    SlvrReport::instance().addTimePoint("start_execution", std::chrono::system_clock::now());
+
+    SlvrZoning init_bdry_program;
     init_bdry_program.setupPhase();
 
-    SlvrCore solver_program(argv[1]);
+    SlvrCore solver_program;
     solver_program.setup();
+    
+    SlvrReport::instance().addTimePoint("end_execution", std::chrono::system_clock::now());
+
+    SlvrReport::instance().exportData();
+
 
     return 0;
 

@@ -21,14 +21,10 @@
 #include "utility/ConfigReader.hpp"
 
 #include "solver/FiniteDifference.hpp"
+#include "report/SlvrReport.hpp"
 
-FiniteDifference::FiniteDifference(std::shared_ptr<GeometryTopology> neutral_geometry_topology, const char* runtime_config_file_path) {
+FiniteDifference::FiniteDifference(std::shared_ptr<GeometryTopology> neutral_geometry_topology) {
     _neutralGeometryTopology = neutral_geometry_topology;
-    _runtimeConfigFilePath = runtime_config_file_path;
-}
-
-FiniteDifference::~FiniteDifference() {
-    // TBA
 }
 
 std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(
@@ -39,8 +35,6 @@ std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(
     std::vector<OutputXDMFAdapter::ParameterMetadata> output_parameter_metadata_list, 
     std::vector<std::shared_ptr<GeometryTopology>> zone_neutral_geometry_topology_list, 
     std::unordered_set < std::array<uint8_t, 16>, SlvrCore::UUIDHash>& boundary_vertex_list) {
-
-    ConfigReader config_reader;
 
     std::unordered_map<std::shared_ptr<GeometryTopology>, unsigned int> vertex_list;
     _neutralGeometryTopology->getDescendants(vertex_list, GeometryTopology::Type::VERTEX);
@@ -71,6 +65,8 @@ std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(
         );
 
     for (unsigned int i = 0; i < iter_count; i++) {
+        SlvrReport::instance().addTimePoint("iter" + std::to_string(i + 1) + "_begin", std::chrono::system_clock::now());
+
         std::string output_file_suffix;
         
         output_file_suffix = "original.iter";
@@ -78,7 +74,7 @@ std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(
         output_file_suffix += ".slvr";
 
         std::shared_ptr<OutputXDMFAdapter> solverOutputAdapter;
-        solverOutputAdapter = std::make_shared<OutputXDMFAdapter>(_runtimeConfigFilePath, output_file_suffix);
+        solverOutputAdapter = std::make_shared<OutputXDMFAdapter>(output_file_suffix);
 
         double actual_error = 0;
 
@@ -101,17 +97,24 @@ std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(
             }
         }
 
+        SlvrReport::instance().addErrorProgression(actual_error);
+
         if (i > 0 && actual_error < error_tolerance) {
+            SlvrReport::instance().addTimePoint("error_requirement_fulfilled", std::chrono::system_clock::now());
             break;
         }
         else {
             std::dynamic_pointer_cast<OutputXDMFAdapter>(solverOutputAdapter)->addSolverParameter(output_parameter_metadata_list);
             std::dynamic_pointer_cast<OutputXDMFAdapter>(solverOutputAdapter)->serialize(_neutralGeometryTopology);
 
+            SlvrReport::instance().addTimePoint("original_iter" + std::to_string(i + 1) + "_slvr_out", std::chrono::system_clock::now());
+            SlvrReport::instance().addFileSuffix("out", output_file_suffix, "xmf");
+            SlvrReport::instance().addFileSuffix("out", output_file_suffix, "h5");
+
             std::string existing_hdf5_file_path =
-                config_reader.getRuntimeConfigValue(_runtimeConfigFilePath, "scmp", "staging_directory_path") +
+                ConfigReader::instance().getRuntimeConfigValue("scmp", "staging_directory_path") +
                 "/" +
-                config_reader.getRuntimeConfigValue(_runtimeConfigFilePath, "scmp", "file_name_prefix") +
+                ConfigReader::instance().getRuntimeConfigValue("scmp", "file_name_prefix") +
                 "." +
                 "original.iter" +
                 std::to_string(i + 1) + 
@@ -125,9 +128,15 @@ std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(
             output_file_suffix += std::to_string(i + 1);
             output_file_suffix += ".slvr";
 
-            solverOutputAdapter = std::make_shared<OutputXDMFAdapter>(_runtimeConfigFilePath, output_file_suffix);
+            solverOutputAdapter = std::make_shared<OutputXDMFAdapter>(output_file_suffix);
             std::dynamic_pointer_cast<OutputXDMFAdapter>(solverOutputAdapter)->appendZoneCreationData(zone_neutral_geometry_topology_list, hdf5_buffer);
+
+            SlvrReport::instance().addTimePoint("extended_iter" + std::to_string(i + 1) + "_slvr_out", std::chrono::system_clock::now());
+            SlvrReport::instance().addFileSuffix("out", output_file_suffix, "xmf");
+            SlvrReport::instance().addFileSuffix("out", output_file_suffix, "h5");
         }
+
+        SlvrReport::instance().addTimePoint("iter" + std::to_string(i + 1) + "_finish", std::chrono::system_clock::now());
     }
 
     return _neutralGeometryTopology;

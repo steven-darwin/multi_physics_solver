@@ -26,10 +26,10 @@ public:
 
     /** Constructor of FiniteDifference object
      */
-    FiniteDifference(std::shared_ptr<GeometryTopology> neutral_geometry_topology, const char* runtime_config_file_path);
+    FiniteDifference(std::shared_ptr<GeometryTopology> neutral_geometry_topology);
 
     /** Destructor of FiniteDifference object */
-    ~FiniteDifference();
+    ~FiniteDifference() = default;
 
     /** Method to solve the differential equation using point iterative method */
     std::shared_ptr<GeometryTopology> pointIterative(
@@ -46,8 +46,6 @@ public:
     void predictiveCorrective();
 
 private:
-    const char* _runtimeConfigFilePath;
-
     /** Attribute to store nwutral geometry-topology data */
     std::shared_ptr<GeometryTopology> _neutralGeometryTopology;
 };

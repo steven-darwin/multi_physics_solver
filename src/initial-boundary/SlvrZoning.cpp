@@ -25,26 +25,13 @@ using json = nlohmann::json;
 #include "utility/ConfigReader.hpp"
 
 #include "initial-boundary/SlvrZoning.hpp"
-
-SlvrZoning::SlvrZoning() {
-    // TBA
-}
-
-SlvrZoning::SlvrZoning(const char* runtime_config_file_path) {
-    _runtimeConfigFilePath = runtime_config_file_path;
-}
-
-SlvrZoning::~SlvrZoning() {
-    // TBA
-}
+#include "report/SlvrReport.hpp"
 
 void SlvrZoning::setupPhase() {
-    ConfigReader config_reader;
-
     std::string zone_json_file_path =
-        config_reader.getRuntimeConfigValue(_runtimeConfigFilePath, "scmp", "staging_directory_path") +
+        ConfigReader::instance().getRuntimeConfigValue("scmp", "staging_directory_path") +
         "/" +
-        config_reader.getRuntimeConfigValue(_runtimeConfigFilePath, "scmp", "file_name_prefix") +
+        ConfigReader::instance().getRuntimeConfigValue("scmp", "file_name_prefix") +
         "_" +
         "zone.json";
 
@@ -66,6 +53,8 @@ void SlvrZoning::setupPhase() {
         std::cin >> is_zone_being_added;
 
         if (is_zone_being_added == "Y") {
+            SlvrReport::InitBdrySetupItem init_bdry_setup_item;
+
             std::cout << "-----------------------------------------------" << std::endl;
 
             std::vector<std::string> condition_list = { "initial", "boundary" };
@@ -77,9 +66,9 @@ void SlvrZoning::setupPhase() {
             }
             std::cout << "selected condition: ";
             std::cin >> selected_condition;
+            init_bdry_setup_item.condition_type = condition_list[std::stoi(selected_condition) - 1];
 
             std::cout << "-----------------------------------------------" << std::endl;
-
 
             counter = 0;
             std::string selected_zone_option;
@@ -88,6 +77,7 @@ void SlvrZoning::setupPhase() {
             }
             std::cout << "selected zone : ";
             std::cin >> selected_zone_option;
+            init_bdry_setup_item.zone_name = parsed_zone[std::stoi(selected_zone_option) - 1].at("name").get<std::string>();
 
             std::string inputted_parameter;
             std::cout << "parameter : ";
@@ -99,7 +89,7 @@ void SlvrZoning::setupPhase() {
 
             std::cout << parsed_zone[std::stoi(selected_zone_option) - 1].at("name").get<std::string>() << " " << condition_list[std::stoi(selected_condition) - 1] << " condition setup: " << std::endl;
 
-            init_bdry_setup["parameter"] = inputted_parameter;
+            init_bdry_setup["parameter"] = init_bdry_setup_item.parameter = inputted_parameter;
 
             counter = 0;
             std::vector<std::string> mode_list = { "uniform" };
@@ -109,12 +99,13 @@ void SlvrZoning::setupPhase() {
             }
             std::cout << "selected mode : ";
             std::cin >> selected_mode;
-            init_bdry_setup["mode"] = mode_list[std::stoi(selected_mode) - 1];
+            init_bdry_setup["mode"] = init_bdry_setup_item.mode = mode_list[std::stoi(selected_mode) - 1];
 
             std::string inputted_value;
             std::cout << "value : ";
             std::cin >> inputted_value;
             init_bdry_setup["value"] = inputted_value;
+            init_bdry_setup_item.value = std::stod(inputted_value);
 
             std::vector<json> init_bdry_setup_list;
 
@@ -124,6 +115,8 @@ void SlvrZoning::setupPhase() {
                     init_bdry_setup_list.push_back((*setup_iter));
                 }
             }
+
+            SlvrReport::instance().setInitBdrySetupItem(init_bdry_setup_item);
 
             init_bdry_setup_list.push_back(init_bdry_setup);
             full_zone_data["zone"][std::stoi(selected_zone_option) - 1][condition_list[std::stoi(selected_condition) - 1]] = init_bdry_setup_list;

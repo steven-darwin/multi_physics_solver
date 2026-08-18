@@ -32,17 +32,14 @@ public:
 
     /** Constructor of SolverCore object
      */
-    SlvrCore();
-    SlvrCore(const char* runtime_config_file_path);
+    SlvrCore() = default;
 
     /** Destructor of SolverCore object */
-    ~SlvrCore();
+    ~SlvrCore() = default;
 
     void setup();
 
 private:
-    const char* _runtimeConfigFilePath;
-
     /** Attribute to store input adapter metadata */
     scmp::AdapterInfo _inputAdapterInfo;
 

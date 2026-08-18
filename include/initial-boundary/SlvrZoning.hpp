@@ -18,17 +18,16 @@ class SlvrZoning {
 public:
 
     /** Constructor of VszrZoning object */
-    SlvrZoning();
-    SlvrZoning(const char* runtime_config_file_path);
+    SlvrZoning() = default;
 
     /** Destructor of MeshZoning object */
-    ~SlvrZoning();
+    ~SlvrZoning() = default;
 
     void setupPhase();
     void executionPhase();
 
 private:
-    const char* _runtimeConfigFilePath;
+
 };
 
 #endif

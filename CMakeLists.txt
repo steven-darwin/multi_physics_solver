@@ -36,6 +36,7 @@ set(PROJECT_SOURCES
     src/core/SlvrCore.cpp
     src/initial-boundary/SlvrZoning.cpp
     src/solver/FiniteDifference.cpp
+    src/report/SlvrReport.cpp
 )
 
 add_executable (${PROJECT_NAME} ${PROJECT_SOURCES}) 
