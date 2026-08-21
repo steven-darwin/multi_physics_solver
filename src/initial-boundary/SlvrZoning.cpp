@@ -49,6 +49,7 @@ void SlvrZoning::setupPhase() {
         std::string is_zone_being_added;
         unsigned int counter = 0;
 
+        std::cout << std::endl;
         std::cout << "Adding Initial or Boundary Condition to a Zone? (Y/N)" << std::endl;
         std::cin >> is_zone_being_added;
 
@@ -132,6 +133,8 @@ void SlvrZoning::setupPhase() {
     std::ofstream modified_zone(zone_buffer);
     modified_zone << std::setw(4) << full_zone_data << std::endl;
     modified_zone.close();
+
+    std::cout << std::endl;
 }
 
 void SlvrZoning::executionPhase() {

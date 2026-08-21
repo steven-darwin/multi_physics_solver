@@ -31,6 +31,8 @@ using json = nlohmann::json;
 #include "report/SlvrReport.hpp"
 
 void SlvrCore::setup() {
+    unsigned int progress = 0;
+
     std::string zone_json_file_path =
         ConfigReader::instance().getRuntimeConfigValue("scmp", "staging_directory_path") +
         "/" +
@@ -94,11 +96,20 @@ void SlvrCore::setup() {
             }
         }
 
+        unsigned int initial_zone_total = 0;
+        for (auto zone_iter = parsed_zone.begin(); zone_iter != parsed_zone.end(); zone_iter++) {
+            if (zone_iter->contains("initial")) {
+                initial_zone_total++;
+            }
+        }
+        
+        unsigned int initial_counter = 0;
         for (auto zone_iter = parsed_zone.begin(); zone_iter != parsed_zone.end(); zone_iter++) {
             if (zone_iter->contains("initial")) {
                 std::unordered_map<std::shared_ptr<GeometryTopology>, unsigned int> vertex_list;
                 zone_entity_list.at((*zone_iter).at("entity_id").get<std::array<uint8_t, 16>>())->getDescendants(vertex_list, GeometryTopology::Type::VERTEX);
 
+                unsigned int counter = 0;
                 for (auto vertex_iter = vertex_list.begin(); vertex_iter != vertex_list.end(); vertex_iter++) {
                     std::vector<json> parameter_list = zone_iter->at("initial");
 
@@ -117,18 +128,34 @@ void SlvrCore::setup() {
                             output_parameter_label_list.insert(parameter_iter->at("parameter").get<std::string>());
                         }
                     }
+
+                    progress = 0 + (initial_counter / static_cast<double>(initial_zone_total) * 50) + (counter / static_cast<double>(vertex_list.size()) / initial_zone_total * 50);
+                    std::cout << "\r" << "Processing Initial & Boundary Condition " << std::string(static_cast<size_t>(std::floor(progress / 10)), '=') << "> " << progress << "%";
+                    counter++;
                 }
+
+                initial_counter++;
             }
         }
 
         SlvrReport::instance().addTimePoint("init_setup_complete", std::chrono::system_clock::now());
+        std::cout << "\r" << "Processing Initial & Boundary Condition ==========> 50%";
 
+        unsigned int boundary_zone_total = 0;
+        for (auto zone_iter = parsed_zone.begin(); zone_iter != parsed_zone.end(); zone_iter++) {
+            if (zone_iter->contains("boundary")) {
+                boundary_zone_total++;
+            }
+        }
+
+        unsigned int boundary_counter = 0;
         std::unordered_set<std::array<uint8_t, 16>, UUIDHash> boundary_vertex_list;
         for (auto zone_iter = parsed_zone.begin(); zone_iter != parsed_zone.end(); zone_iter++) {
             if (zone_iter->contains("boundary")) {
                 std::unordered_map<std::shared_ptr<GeometryTopology>, unsigned int> vertex_list;
                 zone_entity_list.at((*zone_iter).at("entity_id").get<std::array<uint8_t, 16>>())->getDescendants(vertex_list, GeometryTopology::Type::VERTEX);
 
+                unsigned int counter = 0;
                 for (auto vertex_iter = vertex_list.begin(); vertex_iter != vertex_list.end(); vertex_iter++) {
                     std::vector<json> parameter_list = zone_iter->at("boundary");
 
@@ -151,11 +178,18 @@ void SlvrCore::setup() {
                             output_parameter_label_list.insert(parameter_iter->at("parameter").get<std::string>());
                         }
                     }
+
+                    progress = 50 + (boundary_counter / static_cast<double>(boundary_zone_total) * 50) + (counter / static_cast<double>(vertex_list.size()) / boundary_zone_total * 50);
+                    std::cout << "\r" << "Processing Initial & Boundary Condition " << std::string(static_cast<size_t>(std::floor(progress / 10)), '=') << "> " << progress << "%";
+                    counter++;
                 }
+
+                boundary_counter++;
             }
         }
 
         SlvrReport::instance().addTimePoint("bdry_setup_complete", std::chrono::system_clock::now());
+        std::cout << "\r" << "Processing Initial & Boundary Condition ==========> 100%" << std::endl;
 
         _outputAdapterInfo._adapterObj = std::make_shared<OutputXDMFAdapter>("original.pre.slvr");
         _outputAdapterInfo._neutralGeometryTopology = _inputAdapterInfo._neutralGeometryTopology;

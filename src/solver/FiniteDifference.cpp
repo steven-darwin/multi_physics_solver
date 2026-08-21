@@ -64,7 +64,10 @@ std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(
         (2 * std::pow(step_size[0], 2) * std::pow(step_size[1], 2))
         );
 
+    unsigned int progress = 0;
     for (unsigned int i = 0; i < iter_count; i++) {
+        std::cout << "--- iter " << (i + 1) << " ---" <<  std::endl;
+
         SlvrReport::instance().addTimePoint("iter" + std::to_string(i + 1) + "_begin", std::chrono::system_clock::now());
 
         std::string output_file_suffix;
@@ -78,6 +81,7 @@ std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(
 
         double actual_error = 0;
 
+        unsigned int counter = 0;
         for (unsigned int j = 0; j < ordered_vertex.size(); j++) {
             std::vector<double> computational_grid_coordinate = ordered_vertex[j]->getAttributeValue("computational_grid");
 
@@ -93,9 +97,17 @@ std::shared_ptr<GeometryTopology> FiniteDifference::pointIterative(
 
                 ordered_vertex[j]->upsertAttribute("temperature", { 1 }, { ordered_vertex[j]->getAttributeValue("temperature")[0] + (relaxation_factor * (temp_value - ordered_vertex[j]->getAttributeValue("temperature")[0])) });
 
-                std::cout << i << " " << j << " " << ordered_vertex[j]->getAttributeValue("temperature")[0] << " " << actual_error << std::endl;
+                if (ConfigReader::instance().getEnvConfigValue("IS_DEBUG") == "1") {
+                    std::cout << i << " " << j << " " << ordered_vertex[j]->getAttributeValue("temperature")[0] << " " << actual_error << std::endl;
+                }
             }
+
+
+            progress = 0 + ((counter + 1) / static_cast<double>(ordered_vertex.size()) * 100);
+            std::cout << "\r" << "Executing Solver Algorithm (gauss-seidel) " << std::string(static_cast<size_t>(std::floor(progress / 10)), '=') << "> " << progress << "%";
+            counter++;
         }
+        std::cout << "\r" << "Executing Solver Algorithm (gauss-seidel) ==========> 100%" << std::endl;
 
         SlvrReport::instance().addErrorProgression(actual_error);
 
